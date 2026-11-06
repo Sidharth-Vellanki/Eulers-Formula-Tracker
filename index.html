@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f3ed">
+  <title>Euler's Method | Step by step</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4f3ed;
+      --ink: #202a27;
+      --muted: #64716c;
+      --line: #d7ddd4;
+      --green: #245c49;
+      --green-dark: #194535;
+      --lime: #d9e7a5;
+      --coral: #c85e47;
+      --white: #fffefa;
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: "Trebuchet MS", "Avenir Next", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#c9d1c5 0.65px, transparent 0.65px);
+      background-size: 15px 15px;
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+    button, input { font: inherit; }
+    .page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 38px 0 64px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+    .brand { display: flex; gap: 11px; align-items: center; font-size: 14px; font-weight: 700; letter-spacing: .04em; }
+    .brand-mark { display: grid; width: 35px; aspect-ratio: 1; place-items: center; color: var(--white); background: var(--green); border-radius: 50%; font-family: var(--serif); font-size: 21px; }
+    .edition { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+    .intro { max-width: 720px; margin-bottom: 32px; }
+    .eyebrow { margin: 0 0 8px; color: var(--green); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; }
+    h1 { margin: 0; font: 400 clamp(38px, 6vw, 64px)/1.02 var(--serif); letter-spacing: 0; }
+    .intro-copy { max-width: 590px; margin: 15px 0 0; color: var(--muted); font-size: 16px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .82fr); align-items: start; gap: 22px; }
+    .panel { background: var(--white); border: 1px solid var(--line); border-radius: 5px; box-shadow: 0 8px 26px rgb(34 50 42 / 5%); }
+    .form-panel { padding: 25px; }
+    .section-heading { display: flex; gap: 12px; align-items: center; margin: 0 0 18px; font-size: 15px; }
+    .section-heading span { display: grid; width: 25px; aspect-ratio: 1; place-items: center; border-radius: 50%; color: var(--green); background: #e8eee1; font-size: 12px; }
+    .field { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; }
+    .hint { margin: 0 0 7px; color: var(--muted); font-size: 12px; }
+    input[type="text"], input[type="number"] {
+      width: 100%; min-height: 44px; padding: 10px 12px; color: var(--ink);
+      background: #fff; border: 1px solid #cbd3ca; border-radius: 3px; outline: none;
+    }
+    input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgb(36 92 73 / 13%); }
+    input::placeholder { color: #9aa39d; }
+    .equation-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .equation-prefix { color: var(--green); font-family: var(--serif); font-size: 19px; white-space: nowrap; }
+    .initial-grid, .range-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .divider { height: 1px; margin: 22px 0; background: var(--line); }
+    .range-note { padding: 10px 12px; border-left: 3px solid var(--lime); background: #f5f7ed; color: var(--muted); font-size: 12px; }
+    .options { display: flex; gap: 17px; flex-wrap: wrap; margin-top: 17px; }
+    .check-label { display: flex; gap: 8px; align-items: center; margin: 0; color: var(--muted); font-size: 13px; font-weight: 400; cursor: pointer; }
+    input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--green); }
+    .run-button { width: 100%; min-height: 48px; margin-top: 22px; color: white; background: var(--green); border: 0; border-radius: 3px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s; }
+    .run-button:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .run-button:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+    .side { display: grid; gap: 16px; }
+    .result-panel { min-height: 224px; padding: 24px; color: white; background: var(--green); border: 0; position: relative; overflow: hidden; }
+    .result-panel::after { content: ""; position: absolute; width: 160px; height: 160px; right: -72px; bottom: -82px; border: 1px solid rgb(255 255 255 / 20%); border-radius: 50%; box-shadow: 0 0 0 18px rgb(255 255 255 / 4%), 0 0 0 38px rgb(255 255 255 / 4%); }
+    .result-label { margin: 0; color: #c4d6c9; font-size: 12px; text-transform: uppercase; letter-spacing: .13em; }
+    .result-value { margin: 20px 0 8px; font: 400 30px/1.2 var(--serif); overflow-wrap: anywhere; }
+    .result-detail { margin: 0; color: #c4d6c9; font-size: 13px; }
+    .placeholder { margin-top: 34px; color: #e1ebe3; font: 400 21px var(--serif); }
+    .error { position: relative; z-index: 1; margin: 17px 0 0; padding: 9px 10px; color: #fff3ef; background: rgb(0 0 0 / 15%); border-left: 3px solid #ffb09d; font-size: 13px; }
+    .plot-panel, .table-panel { padding: 19px; }
+    .plot-title, .table-title { margin: 0 0 12px; font-size: 14px; }
+    .plot-wrap { min-height: 175px; display: grid; place-items: center; background: #f7f8f2; border: 1px solid #e3e7df; }
+    .plot-wrap svg { display: block; width: 100%; height: auto; }
+    .plot-empty { padding: 24px; color: #8a948d; font-size: 13px; text-align: center; }
+    .table-panel[hidden], .plot-panel[hidden] { display: none; }
+    .table-scroll { max-height: 300px; overflow: auto; border: 1px solid #e3e7df; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e8ebe5; text-align: right; }
+    th { position: sticky; top: 0; color: var(--muted); background: #f7f8f2; font-weight: 700; }
+    th:first-child, td:first-child { text-align: left; }
+    .table-cap { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+    footer { display: flex; justify-content: space-between; gap: 15px; margin-top: 22px; color: var(--muted); font-size: 12px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @media (max-width: 760px) {
+      .page { width: min(100% - 28px, 560px); padding-top: 22px; }
+      header { margin-bottom: 34px; }
+      .edition { font-size: 10px; }
+      .workspace { grid-template-columns: 1fr; }
+      .form-panel { padding: 20px; }
+      footer { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">∑</span><span>FIELD NOTES / MATHEMATICS</span></div>
+      <div class="edition">A numerical methods tool</div>
+    </header>
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">A practical approximation</p>
+      <h1 id="page-title">Euler's Method</h1>
+      <p class="intro-copy">Follow the slope of a differential equation, one small step at a time, to estimate where its solution goes.</p>
+    </section>
+
+    <div class="workspace">
+      <form class="panel form-panel" id="euler-form">
+        <h2 class="section-heading"><span>1</span> Describe the equation</h2>
+        <div class="field">
+          <label for="equation">Rate of change</label>
+          <p class="hint">Enter the right side of dy/dx. Example: x + y, sin(x) - y, or 2*x</p>
+          <div class="equation-row"><span class="equation-prefix" aria-hidden="true">dy/dx =</span><input id="equation" type="text" value="x + y" autocomplete="off" spellcheck="false" aria-describedby="equation-help"></div>
+          <span id="equation-help" class="sr-only">Use x, y, numbers, arithmetic operators, and functions such as sin, cos, exp, log, sqrt, and abs.</span>
+        </div>
+        <div class="field">
+          <label>Starting point</label>
+          <p class="hint">Where to begin following the curve</p>
+          <div class="initial-grid">
+            <div><label class="sr-only" for="x0">Starting x</label><input id="x0" type="number" step="any" value="0" placeholder="x₀" aria-label="Starting x value"></div>
+            <div><label class="sr-only" for="y0">Starting y</label><input id="y0" type="number" step="any" value="1" placeholder="y₀" aria-label="Starting y value"></div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <h2 class="section-heading"><span>2</span> Choose how far to go</h2>
+        <p class="hint">Fill in any two. We will work out the third.</p>
+        <div class="range-grid">
+          <div class="field"><label for="step-size">Step size (Δx)</label><input id="step-size" type="number" step="any" placeholder="e.g. 0.1"></div>
+          <div class="field"><label for="step-count">Number of steps</label><input id="step-count" type="number" step="1" min="1" placeholder="e.g. 20"></div>
+          <div class="field" style="grid-column: 1 / -1"><label for="final-x">Final x-value</label><input id="final-x" type="number" step="any" placeholder="e.g. 2"></div>
+        </div>
+        <div class="options">
+          <label class="check-label"><input id="show-points" type="checkbox"> Show every point</label>
+          <label class="check-label"><input id="show-plot" type="checkbox" checked> Plot the path</label>
+        </div>
+        <button class="run-button" type="submit">Calculate endpoint <span aria-hidden="true">→</span></button>
+      </form>
+
+      <section class="side" aria-label="Calculation results">
+        <div class="panel result-panel" id="result" aria-live="polite">
+          <p class="result-label">Your endpoint</p>
+          <p class="placeholder">The estimate will appear here.</p>
+        </div>
+        <section class="panel plot-panel" id="plot-panel" aria-labelledby="plot-title">
+          <h2 class="plot-title" id="plot-title">Path estimate</h2>
+          <div class="plot-wrap" id="plot"><div class="plot-empty">Run a calculation to see the path.</div></div>
+        </section>
+        <section class="panel table-panel" id="table-panel" aria-labelledby="table-title" hidden>
+          <h2 class="table-title" id="table-title">Calculated points</h2>
+          <div class="table-scroll" id="point-table"></div>
+          <p class="table-cap" id="table-cap"></p>
+        </section>
+      </section>
+    </div>
+    <footer><span>Euler's update: next y = current y + step size × rate of change</span><span>Estimates improve with smaller steps.</span></footer>
+  </main>
+  <script>
+    const form = document.querySelector('#euler-form');
+    const result = document.querySelector('#result');
+    const tablePanel = document.querySelector('#table-panel');
+    const plotPanel = document.querySelector('#plot-panel');
+    const functionNames = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'exp', 'log', 'log10', 'floor', 'ceil', 'round']);
+    const functions = {
+      sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan,
+      sqrt: Math.sqrt, abs: Math.abs, exp: Math.exp, log: Math.log, log10: Math.log10,
+      floor: Math.floor, ceil: Math.ceil, round: Math.round
+    };
+
+    function compileEquation(source) {
+      const tokens = [];
+      const pattern = /\s+|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[a-zA-Z]+|[()+*/^\-]/gy;
+      let position = 0;
+      while (position < source.length) {
+        pattern.lastIndex = position;
+        const match = pattern.exec(source);
+        if (!match) throw new Error(`Unexpected character at position ${position + 1}.`);
+        position = pattern.lastIndex;
+        if (!/^\s+$/.test(match[0])) tokens.push(match[0]);
+      }
+      if (!tokens.length) throw new Error('Enter a rate of change first.');
+      let cursor = 0;
+      const peek = () => tokens[cursor];
+      const take = () => tokens[cursor++];
+      const expect = (token) => {
+        if (take() !== token) throw new Error(`Expected "${token}" in the equation.`);
+      };
+      function expression() {
+        let left = term();
+        while (peek() === '+' || peek() === '-') {
+          const operator = take();
+          const right = term();
+          const previous = left;
+          left = (x, y) => operator === '+' ? previous(x, y) + right(x, y) : previous(x, y) - right(x, y);
+        }
+        return left;
+      }
+      function term() {
+        let left = unary();
+        while (peek() === '*' || peek() === '/') {
+          const operator = take();
+          const right = unary();
+          const previous = left;
+          left = (x, y) => operator === '*' ? previous(x, y) * right(x, y) : previous(x, y) / right(x, y);
+        }
+        return left;
+      }
+      function unary() {
+        if (peek() === '+') { take(); return unary(); }
+        if (peek() === '-') { take(); const value = unary(); return (x, y) => -value(x, y); }
+        return power();
+      }
+      function power() {
+        let left = primary();
+        if (peek() === '^') {
+          take();
+          const right = unary();
+          const previous = left;
+          left = (x, y) => Math.pow(previous(x, y), right(x, y));
+        }
+        return left;
+      }
+      function primary() {
+        const token = take();
+        if (token === undefined) throw new Error('The equation ends unexpectedly.');
+        if (token === '(') {
+          const nested = expression();
+          expect(')');
+          return nested;
+        }
+        if (/^(?:\d|\.)/.test(token)) {
+          const number = Number(token);
+          return () => number;
+        }
+        if (/^[a-zA-Z]+$/.test(token)) {
+          if (token === 'x') return x => x;
+          if (token === 'y') return (x, y) => y;
+          if (token === 'pi') return () => Math.PI;
+          if (token === 'e') return () => Math.E;
+          if (!functionNames.has(token)) throw new Error(`"${token}" is not a supported variable or function.`);
+          expect('(');
+          const argument = expression();
+          expect(')');
+          return (x, y) => functions[token](argument(x, y));
+        }
+        throw new Error(`Unexpected "${token}" in the equation.`);
+      }
+      const evaluate = expression();
+      if (cursor !== tokens.length) throw new Error(`Unexpected "${peek()}" in the equation. Add * for multiplication, such as 2*x.`);
+      return evaluate;
+    }
+
+    function readNumber(id, name) {
+      const raw = document.getElementById(id).value.trim();
+      if (raw === '') return null;
+      const value = Number(raw);
+      if (!Number.isFinite(value)) throw new Error(`${name} must be a finite number.`);
+      return value;
+    }
+
+    function getRange() {
+      let stepSize = readNumber('step-size', 'Step size');
+      let stepCount = readNumber('step-count', 'Number of steps');
+      let finalX = readNumber('final-x', 'Final x-value');
+      const provided = [stepSize, stepCount, finalX].filter(value => value !== null).length;
+      if (provided !== 2) throw new Error('Enter exactly two of step size, number of steps, and final x-value.');
+      const startX = readNumber('x0', 'Starting x');
+      if (startX === null) throw new Error('Enter a starting x-value.');
+      if (stepCount !== null && (!Number.isInteger(stepCount) || stepCount < 1)) throw new Error('Number of steps must be a positive whole number.');
+      if (stepSize !== null && stepSize === 0) throw new Error('Step size cannot be zero.');
+      if (stepSize === null) stepSize = (finalX - startX) / stepCount;
+      else if (stepCount === null) {
+        const exactCount = (finalX - startX) / stepSize;
+        stepCount = Math.round(exactCount);
+        if (stepCount < 1 || Math.abs(exactCount - stepCount) > 1e-8 * Math.max(1, Math.abs(exactCount))) {
+          throw new Error('These values do not produce a whole number of steps. Adjust the step size or final x-value.');
+        }
+      } else finalX = startX + stepSize * stepCount;
+      if (!Number.isSafeInteger(stepCount) || stepCount > 100000) throw new Error('Use 100,000 steps or fewer.');
+      if (!Number.isFinite(stepSize) || stepSize === 0) throw new Error('The calculated step size must be a non-zero finite number.');
+      return { stepSize, stepCount, finalX: startX + stepSize * stepCount };
+    }
+
+    function format(value) {
+      if (Object.is(value, -0)) value = 0;
+      return Number(value.toPrecision(10)).toString();
+    }
+
+    function renderTable(points) {
+      const visiblePoints = points.slice(0, 2000);
+      const rows = visiblePoints.map((point, index) => `<tr><td>${index}</td><td>${format(point.x)}</td><td>${format(point.y)}</td></tr>`).join('');
+      document.querySelector('#point-table').innerHTML = `<table><thead><tr><th>Step</th><th>x</th><th>y</th></tr></thead><tbody>${rows}</tbody></table>`;
+      document.querySelector('#table-cap').textContent = points.length > visiblePoints.length ? `Showing the first ${visiblePoints.length.toLocaleString()} of ${points.length.toLocaleString()} points.` : `${points.length.toLocaleString()} points, including the starting point.`;
+      tablePanel.hidden = !document.querySelector('#show-points').checked;
+    }
+
+    function renderPlot(points) {
+      plotPanel.hidden = !document.querySelector('#show-plot').checked;
+      if (plotPanel.hidden) return;
+      const width = 720, height = 250, pad = { left: 44, right: 18, top: 18, bottom: 32 };
+      const xs = points.map(point => point.x), ys = points.map(point => point.y);
+      let minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      if (minX === maxX) { minX -= 1; maxX += 1; }
+      if (minY === maxY) { minY -= 1; maxY += 1; }
+      const yPad = (maxY - minY) * .08;
+      minY -= yPad; maxY += yPad;
+      const sx = x => pad.left + (x - minX) / (maxX - minX) * (width - pad.left - pad.right);
+      const sy = y => height - pad.bottom - (y - minY) / (maxY - minY) * (height - pad.top - pad.bottom);
+      const path = points.map((point, index) => `${index ? 'L' : 'M'}${sx(point.x).toFixed(2)},${sy(point.y).toFixed(2)}`).join(' ');
+      const zeroY = minY <= 0 && maxY >= 0 ? sy(0) : height - pad.bottom;
+      const zeroX = minX <= 0 && maxX >= 0 ? sx(0) : pad.left;
+      document.querySelector('#plot').innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Plot of the Euler approximation from x ${format(points[0].x)} to x ${format(points.at(-1).x)}"><path d="M${pad.left},${pad.top} V${height - pad.bottom} H${width - pad.right}" fill="none" stroke="#d7ddd4"/><path d="M${pad.left},${zeroY} H${width - pad.right} M${zeroX},${pad.top} V${height - pad.bottom}" stroke="#c5cec4" stroke-dasharray="3 4"/><path d="${path}" fill="none" stroke="#245c49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${sx(points[0].x)}" cy="${sy(points[0].y)}" r="4" fill="#c85e47"/><circle cx="${sx(points.at(-1).x)}" cy="${sy(points.at(-1).y)}" r="4" fill="#c85e47"/><text x="${pad.left}" y="${height - 8}" fill="#64716c" font-size="11">x: ${format(minX)} to ${format(maxX)}</text><text x="${pad.left}" y="13" fill="#64716c" font-size="11">y: ${format(minY)} to ${format(maxY)}</text></svg>`;
+    }
+
+    function showError(message) {
+      result.innerHTML = `<p class="result-label">Your endpoint</p><p class="placeholder">Check the inputs and try again.</p><p class="error" role="alert">${message.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</p>`;
+      tablePanel.hidden = true;
+      document.querySelector('#plot').innerHTML = '<div class="plot-empty">Run a calculation to see the path.</div>';
+    }
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      try {
+        const rate = compileEquation(document.querySelector('#equation').value);
+        const startX = readNumber('x0', 'Starting x');
+        const startY = readNumber('y0', 'Starting y');
+        if (startX === null || startY === null) throw new Error('Enter both starting x and starting y values.');
+        const { stepSize, stepCount, finalX } = getRange();
+        const points = [{ x: startX, y: startY }];
+        let x = startX, y = startY;
+        for (let step = 0; step < stepCount; step++) {
+          const slope = rate(x, y);
+          if (!Number.isFinite(slope)) throw new Error(`The rate is not a real finite number at step ${step}. Check the equation and step size.`);
+          y += stepSize * slope;
+          x += stepSize;
+          if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error(`The estimate became too large at step ${step + 1}. Try a smaller step size.`);
+          points.push({ x, y });
+        }
+        result.innerHTML = `<p class="result-label">Your endpoint</p><p class="result-value">(x, y) = (${format(x)}, ${format(y)})</p><p class="result-detail">${stepCount.toLocaleString()} steps · Δx = ${format(stepSize)} · requested final x = ${format(finalX)}</p>`;
+        renderTable(points);
+        renderPlot(points);
+      } catch (error) {
+        showError(error.message || 'Something went wrong. Check the equation and values.');
+      }
+    });
+    document.querySelector('#show-points').addEventListener('change', event => { tablePanel.hidden = !event.target.checked || !document.querySelector('#point-table table'); });
+    document.querySelector('#show-plot').addEventListener('change', event => { plotPanel.hidden = !event.target.checked; });
+  </script>
+</body>
+</html>
